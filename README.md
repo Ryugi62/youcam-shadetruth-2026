@@ -3,7 +3,9 @@
 **Does the virtual try-on show the shade the brand actually sells?** ShadeTruth sends a brand's digital lip color (HEX) to YouCam's makeup try-on, then *measures* how far the rendered lips drift from that color (CIEDE2000) and shows a badge — `Matches`, `Close`, or `Approximate preview` — before the shopper buys.
 
 - Track: **eCommerce VTO** (right before a purchase: "is this the shade I'm about to buy?") with a Skin AI color read-back.
-- Demo (recorded real API runs, no install): GitHub Pages link in the Devpost submission · Live run: `make run` (needs your own `YOUCAM_API_KEY`).
+- Demo page (recorded real API runs, no install, no login): https://ryugi62.github.io/youcam-shadetruth-2026/
+- Demo video (96 s, English captions, no audio): https://youtu.be/liG77Rmc_UY
+- Live run: `make run` (needs your own `YOUCAM_API_KEY`).
 - Cosmetic use only — no skin diagnosis, no medical claims.
 
 ## Result (generated from `data/drift.json`; checked by `tests/test_stats.py`)
