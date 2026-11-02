@@ -12,7 +12,7 @@ def test_readme_numbers_match_recorded_runs():
     assert m.group(1).strip() == readme_block(d).strip()
 
 
-def test_web_copy_of_data_is_identical():
+def test_docs_copy_of_data_is_identical():
     a = open(os.path.join(ROOT, "data", "drift.json"), "rb").read()
-    b = open(os.path.join(ROOT, "web", "data", "drift.json"), "rb").read()
+    b = open(os.path.join(ROOT, "docs", "data", "drift.json"), "rb").read()
     assert a == b

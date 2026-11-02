@@ -1,4 +1,4 @@
-"""실호출 드리프트 표 생성: 사진 N장 × 색 M개 → data/drift.json + web/results/*.jpg.
+"""실호출 드리프트 표 생성: 사진 N장 × 색 M개 → data/drift.json + docs/results/*.jpg.
 사용: YOUCAM_API_KEY=... python3 scripts/run_drift_table.py"""
 import io, json, os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -9,7 +9,7 @@ from shadetruth.keys import load_key
 
 SHADES = [("Berry", "#C2185B"), ("Coral", "#E8685A"), ("Nude Rose", "#C48B7B"),
           ("Classic Red", "#C8102E"), ("Plum", "#7B2D5B"), ("Soft Pink", "#D4688A")]
-PHOTOS = [("face-a", "samples/face-a.jpg"), ("face-b", "samples/face-b.jpg")]
+PHOTOS = [("face-a", "docs/samples/face-a.jpg"), ("face-b", "docs/samples/face-b.jpg")]
 
 
 def credit_total(c):
@@ -29,9 +29,9 @@ def main():
                 res, rend = run_check(c, photo, hx, finish)
                 d = res.to_dict()
                 im = Image.open(io.BytesIO(rend)).convert("RGB"); im.thumbnail((540, 720))
-                fn = f"web/results/{pid}-{hx[1:].lower()}-{finish}.jpg"
+                fn = f"docs/results/{pid}-{hx[1:].lower()}-{finish}.jpg"
                 im.save(fn, quality=88)
-                d["image"] = fn[4:]
+                d["image"] = fn[5:]
             except Exception as e:  # 실패도 행으로 남긴다
                 d = {"target_hex": hx, "badge": "Unverifiable", "note": f"API 오류: {e}"[:300]}
             d.update(photo=pid, shade=name, finish=finish, seconds=round(time.time() - r0, 1))
@@ -53,7 +53,7 @@ def main():
            "rows": rows}
     json.dump(out, open("data/drift.json", "w"), ensure_ascii=False, indent=1)
     for pid, path in PHOTOS:
-        im = Image.open(path).convert("RGB"); im.thumbnail((540, 720)); im.save(f"web/results/{pid}-original.jpg", quality=88)
+        im = Image.open(path).convert("RGB"); im.thumbnail((540, 720)); im.save(f"docs/results/{pid}-original.jpg", quality=88)
     print("units spent", before - after, "rows", len(rows))
 
 

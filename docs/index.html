@@ -139,7 +139,7 @@ async function go(){
   $("go").disabled=false;
 }
 async function init(){
-  buildPickers();
+  buildPickers(); $("go").onclick=go;
   try{const h=await (await fetch("/api/health")).json();live=!!h.live;$("liveNote").textContent=live?`Live API on (${h.budget_left} checks left on this server)`:""}catch(e){live=false}
   if(!live){$("go").disabled=true;$("liveNote").textContent="Live checks need the local server (see README: make run). The recorded real API runs below are what this page shows."}
   try{

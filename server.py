@@ -8,7 +8,7 @@ from shadetruth.application.check import run_check
 from shadetruth.domain.color import hex_to_rgb
 from shadetruth.keys import load_key
 
-ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
+ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "docs")
 BUDGET = int(os.environ.get("CHECK_BUDGET", "20"))   # 검사 1회 = 21유닛, 폭주 방지용 상한
 _used = 0
 _lock = threading.Lock()

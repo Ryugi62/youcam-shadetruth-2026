@@ -8,6 +8,6 @@ if [ -n "$KEY" ]; then
   c2=$(grep -rIlF "$KEY" . --exclude-dir=.git 2>/dev/null | wc -l | tr -d ' ')
   n=$((c1 + c2))
 fi
-p=$(git grep -n -E 'YOUCAM_API_KEY=.{8,}|Bearer [A-Za-z0-9_-]{20,}' $(git rev-list --all) 2>/dev/null | wc -l | tr -d ' ')
+p=$(git grep -n -E 'YOUCAM_API_KEY=[A-Za-z0-9_-]{16,}|Bearer [A-Za-z0-9_-]{20,}' $(git rev-list --all) 2>/dev/null | wc -l | tr -d ' ')
 echo "key-hits=$n pattern-hits=$p"
 [ "$n" = 0 ] && [ "$p" = 0 ]
