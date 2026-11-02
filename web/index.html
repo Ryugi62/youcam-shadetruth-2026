@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ShadeTruth — does the try-on color match the brand color?</title>
+<style>
+:root{--bg:#fff;--fg:#191f28;--mut:#6b7684;--line:#e5e8eb;--card:#f9fafb;--ok:#0a7d4f;--okbg:#e6f6ef;--mid:#8a5a00;--midbg:#fff4d9;--bad:#b42318;--badbg:#fde8e6;--na:#4e5968;--nabg:#eceff2;--acc:#3182f6;--btn:#1b64da}
+@media (prefers-color-scheme:dark){:root{--bg:#17171c;--fg:#f2f4f6;--mut:#9ea6b3;--line:#2c2d35;--card:#202027;--ok:#5fd3a0;--okbg:#12342a;--mid:#f1c15d;--midbg:#3a2f12;--bad:#ff9d93;--badbg:#401e1b;--na:#c0c7d1;--nabg:#2a2b33;--acc:#6aa8ff}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+main{max-width:920px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:28px;line-height:1.25;margin:8px 0 8px}
+h2{font-size:20px;margin:32px 0 8px}
+p{margin:8px 0}.mut{color:var(--mut)}.small{font-size:13px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.row{display:flex;gap:16px;flex-wrap:wrap}
+.col{flex:1 1 280px;min-width:0}
+.sw{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.sw button{border:2px solid var(--line);background:var(--bg);color:var(--fg);border-radius:12px;padding:8px 8px 8px 8px;display:flex;align-items:center;gap:8px;font:inherit;cursor:pointer;min-height:48px}
+.sw button[aria-pressed=true]{border-color:var(--acc)}
+.dot{width:24px;height:24px;border-radius:50%;border:1px solid rgba(0,0,0,.2)}
+input[type=text]{font:inherit;padding:8px 16px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--fg);width:128px;min-height:48px}
+.btn{font:inherit;font-weight:600;background:var(--btn);color:#fff;border:0;border-radius:12px;padding:16px 16px;min-height:48px;cursor:pointer}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.photos{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.photos button{border:2px solid var(--line);padding:0;border-radius:12px;overflow:hidden;background:none;cursor:pointer;width:80px;height:112px}
+.photos button[aria-pressed=true]{border-color:var(--acc)}
+.photos img{width:100%;height:100%;object-fit:cover;display:block}
+.badge{display:inline-block;font-weight:700;border-radius:999px;padding:8px 16px;font-size:15px}
+.b-ok{background:var(--okbg);color:var(--ok)}.b-mid{background:var(--midbg);color:var(--mid)}.b-bad{background:var(--badbg);color:var(--bad)}.b-na{background:var(--nabg);color:var(--na)}
+.pair{display:flex;gap:8px}.pair figure{margin:0;flex:1;min-width:0}.pair img{width:100%;border-radius:12px;display:block}
+figcaption{font-size:13px;color:var(--mut);margin-top:4px}
+.chips{display:flex;gap:8px;align-items:center;margin:8px 0;flex-wrap:wrap}
+.chip{display:flex;align-items:center;gap:8px;font-size:14px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 16px;margin:8px 0;font-size:15px}.kv b{font-variant-numeric:tabular-nums}
+table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.tw{overflow-x:auto}
+.state{padding:16px;border-radius:12px;background:var(--nabg);color:var(--na);margin:8px 0}
+.err{background:var(--badbg);color:var(--bad)}
+a{color:var(--acc)}
+.sr{position:absolute;left:-9999px}
+</style>
+</head>
+<body>
+<main>
+<p class="small mut">Built for the YouCam API Skin AI &amp; eCommerce VTO Hackathon · eCommerce VTO track</p>
+<h1>ShadeTruth</h1>
+<p><b>The lipstick looked right on screen — but is it the shade the brand sells?</b> ShadeTruth sends the brand's digital color to YouCam's makeup try-on, then measures how far the rendered lips drift from it (CIEDE2000) and shows a badge before the shopper buys.</p>
+<p class="mut small">Why it matters: shade mismatch is a leading reason for color-cosmetics returns (vendor-reported 12–25%; see README for sources). Our measurement: <b id="headline">loading…</b></p>
+
+<h2>Check a shade</h2>
+<div class="card">
+  <div class="row">
+    <div class="col">
+      <p><b>1. Photo</b> <span class="mut small">(samples are YouCam docs' public model photos, not real customers)</span></p>
+      <div class="photos" id="photos" role="group" aria-label="Sample photos"></div>
+      <p><label class="small mut">or upload one (processed in memory, never stored): <input id="file" type="file" accept="image/jpeg,image/png"></label></p>
+    </div>
+    <div class="col">
+      <p><b>2. Brand shade</b></p>
+      <div class="sw" id="shades" role="group" aria-label="Brand shades"></div>
+      <p class="small mut" role="radiogroup" aria-label="Finish">Finish: <label><input type="radio" name="fin" value="matte" checked> matte</label> <label><input type="radio" name="fin" value="gloss"> gloss</label></p>
+      <p><label class="small mut">custom HEX <input id="hex" type="text" value="#C2185B" maxlength="7" aria-label="custom HEX"></label></p>
+    </div>
+  </div>
+  <p><button class="btn" id="go">Check shade</button> <span class="small mut" id="liveNote"></span></p>
+  <div id="out" aria-live="polite"></div>
+</div>
+
+<h2>Recorded runs</h2>
+<p class="mut small" id="meta"></p>
+<div class="tw"><table id="tbl"><thead><tr><th>Photo</th><th>Shade</th><th>Finish</th><th>Brand</th><th>Rendered</th><th>Drift (hue+chroma)</th><th>Lightness</th><th>YouCam read-back</th><th>Badge</th></tr></thead><tbody></tbody></table></div>
+
+<h2>How it is measured, and what it is not</h2>
+<div class="card">
+<ul>
+<li><b>Ground truth = the HEX we send</b> (the brand's digital shade). Not the physical bottle, not your monitor.</li>
+<li><b>Rendered area</b> = pixels the try-on changed vs. the original photo, minus a 2px edge feather, highlights/shadows trimmed (10–90% lightness). A heuristic, not an API mask.</li>
+<li><b>Drift</b> = CIEDE2000 hue + chroma terms only; lightness L* is shown separately as lighter/darker, because matte shading and lighting legitimately change it.</li>
+<li><b>Badge cut-offs</b> (fixed before the first API call): ≤5 Matches · ≤10 Close · &gt;10 Approximate preview.</li>
+<li><b>Independent read-back</b>: the rendered image is sent to YouCam's Face Tone Analyzer; its <code>lip_color</code> is compared to the brand HEX. "agree" = both readings within 4.</li>
+<li><b>Limits</b>: sample size is small, two model photos; two finishes (matte, gloss; intensity 100, skin smoothing off) — gloss drift includes the finish's intended highlights. Cosmetic use only — no skin diagnosis.</li>
+</ul>
+</div>
+</main>
+<script>
+const SHADES=[["Berry","#C2185B"],["Coral","#E8685A"],["Nude Rose","#C48B7B"],["Classic Red","#C8102E"],["Plum","#7B2D5B"],["Soft Pink","#D4688A"]];
+const PHOTOS=[["face-a","samples/face-a.jpg"],["face-b","samples/face-b.jpg"]];
+let photoSel="face-a", uploaded=null, live=false;
+const $=id=>document.getElementById(id);
+const cls=b=>b.startsWith("Matches")?"b-ok":b.startsWith("Close")?"b-mid":b.startsWith("Approx")?"b-bad":"b-na";
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function dot(h){return h?`<span class="dot" style="background:${esc(h)};display:inline-block;vertical-align:middle"></span>`:""}
+function badge(b){return `<span class="badge ${cls(b)}">${esc(b)}</span>`}
+function buildPickers(){
+  $("shades").innerHTML=SHADES.map(([n,h])=>`<button type="button" data-h="${h}" aria-pressed="${h==="#C2185B"}"><span class="dot" style="background:${h}"></span>${n}<span class="small mut">${h}</span></button>`).join("");
+  $("shades").onclick=e=>{const b=e.target.closest("button");if(!b)return;$("hex").value=b.dataset.h;sync()};
+  $("photos").innerHTML=PHOTOS.map(([id,src])=>`<button type="button" data-id="${id}" aria-pressed="${id===photoSel}" aria-label="photo ${id}"><img src="${src}" alt="sample model ${id}"></button>`).join("");
+  $("photos").onclick=e=>{const b=e.target.closest("button");if(!b)return;photoSel=b.dataset.id;uploaded=null;$("file").value="";sync()};
+  $("hex").oninput=sync;
+  $("file").onchange=async e=>{const f=e.target.files[0];if(!f)return;uploaded=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result.split(",")[1]);fr.readAsDataURL(f)});photoSel=null;sync()};
+}
+function sync(){
+  const h=$("hex").value.trim().toUpperCase();
+  document.querySelectorAll("#shades button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.h===h));
+  document.querySelectorAll("#photos button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.id===photoSel));
+}
+async function photoB64(){
+  if(uploaded) return uploaded;
+  const src=PHOTOS.find(p=>p[0]===photoSel)[1];
+  const buf=await (await fetch(src)).arrayBuffer();
+  let s="";const u=new Uint8Array(buf);for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));
+  return btoa(s);
+}
+function renderResult(r,origSrc){
+  if(r.error) return `<div class="state err" role="alert">${esc(r.error)}</div>`;
+  const ok=r.drift_hc!=null;
+  return `<div class="pair"><figure><img alt="original photo" src="${origSrc}"><figcaption>Original</figcaption></figure>
+  <figure><img alt="rendered try-on" src="data:image/jpeg;base64,${r.render_b64}"><figcaption>YouCam makeup try-on result</figcaption></figure></div>
+  <p style="margin-top:12px">${badge(r.badge)}</p>
+  <div class="chips"><span class="chip">${dot(r.target_hex)} brand ${esc(r.target_hex)}</span>${ok?`<span class="chip">${dot(r.measured_hex)} rendered ${esc(r.measured_hex)}</span>`:""}${r.api_read_hex?`<span class="chip">${dot(r.api_read_hex)} YouCam read-back ${esc(r.api_read_hex.toUpperCase())}</span>`:""}</div>
+  ${ok?`<div class="kv"><span class="mut">Drift (hue+chroma)</span><b>ΔE00 ${r.drift_hc}</b><span class="mut">Lightness</span><b>${r.dL_star>0?"+":""}${r.dL_star} L* · ${esc(r.lightness)}</b><span class="mut">Read-back drift</span><b>${r.api_read_drift_hc??"n/a"} · ${r.agree?"agrees with our measure":"differs from our measure"}</b><span class="mut">Measured area</span><b>${(r.region_frac*100).toFixed(2)}% of image</b></div>`:`<div class="state">No number is shown: ${esc(r.note)}</div>`}
+  <p class="small mut">Brand digital shade is the ground truth — not the physical product. Sample size: 1 render.</p>`;
+}
+async function go(){
+  const hex=$("hex").value.trim();
+  if(!/^#[0-9a-fA-F]{6}$/.test(hex)){ $("out").innerHTML='<div class="state err" role="alert">Enter a HEX like #C2185B.</div>'; return; }
+  $("go").disabled=true;
+  $("out").innerHTML='<div class="state">Rendering with YouCam and measuring… about 20–40 seconds.</div>';
+  try{
+    const b64=await photoB64();
+    const resp=await fetch("/api/check",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({hex,photo_b64:b64,finish:document.querySelector("input[name=fin]:checked").value})});
+    const r=await resp.json();
+    const orig=uploaded?`data:image/jpeg;base64,${uploaded}`:PHOTOS.find(p=>p[0]===photoSel)[1];
+    $("out").innerHTML=renderResult(resp.ok?r:{error:r.error||"request failed"},orig);
+  }catch(e){ $("out").innerHTML='<div class="state err" role="alert">Network error: '+esc(e.message)+'</div>'; }
+  $("go").disabled=false;
+}
+async function init(){
+  buildPickers();
+  try{const h=await (await fetch("/api/health")).json();live=!!h.live;$("liveNote").textContent=live?`Live API on (${h.budget_left} checks left on this server)`:""}catch(e){live=false}
+  if(!live){$("go").disabled=true;$("liveNote").textContent="Live checks need the local server (see README: make run). The recorded real API runs below are what this page shows."}
+  try{
+    const d=await (await fetch("data/drift.json")).json();
+    const rows=d.rows, measured=rows.filter(r=>r.drift_hc!=null);
+    const m=(a=>a.slice().sort((x,y)=>x-y))(measured.map(r=>r.drift_hc));
+    const med=m.length?m[Math.floor(m.length/2)]:null;
+    const badgeCount=k=>rows.filter(r=>(r.badge||"").startsWith(k)).length;
+    $("headline").textContent=`${rows.length} real YouCam renders (2 model photos × ${SHADES.length} shades × matte and gloss finishes): median hue+chroma drift ΔE00 ${med?.toFixed(1)} — ${badgeCount("Matches")} Matches, ${badgeCount("Close")} Close, ${badgeCount("Approx")} Approximate, ${badgeCount("Unver")} Unverifiable.`;
+    $("meta").textContent=`Recorded ${d.generated} · N = ${d.n} · YouCam units spent ${d.units_spent} (makeup-vto 1 + skin-tone-analysis 20 per row) · color intensity 100, skin smoothing 0 · gloss = gloss 60 / transparency 30`;
+    $("tbl").querySelector("tbody").innerHTML=rows.map(r=>`<tr><td>${esc(r.photo)}</td><td>${esc(r.shade)}</td><td>${esc(r.finish||"matte")}</td><td>${dot(r.target_hex)} ${esc(r.target_hex)}</td><td>${dot(r.measured_hex)} ${esc(r.measured_hex||"—")}</td><td>${r.drift_hc??"—"}</td><td>${r.dL_star!=null?(r.dL_star>0?"+":"")+r.dL_star+" L*":"—"}</td><td>${dot(r.api_read_hex)} ${esc((r.api_read_hex||"—").toUpperCase())} ${r.agree===true?"· agree":r.agree===false?"· differs":""}</td><td>${badge(r.badge)}</td></tr>`).join("");
+  }catch(e){ $("headline").textContent="(recorded runs unavailable)"; $("tbl").insertAdjacentHTML("afterend",'<div class="state err">Could not load data/drift.json</div>'); }
+}
+init();
+</script>
+</body>
+</html>
